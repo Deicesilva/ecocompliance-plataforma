@@ -1,5 +1,6 @@
 {
   "version": 2,
+  "framework": null,
   "builds": [
     {
       "src": "*.html",
@@ -12,16 +13,12 @@
       "dest": "/index.html"
     },
     {
-      "src": "/login",
-      "dest": "/login.html"
-    },
-    {
       "src": "/plataforma",
       "dest": "/ecocompliance_platform.html"
     },
     {
       "src": "/(.*)",
-      "dest": "/$1"
+      "dest": "/$1.html"
     }
   ]
 }
