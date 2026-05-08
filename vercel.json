@@ -1,0 +1,17 @@
+{
+  "version": 2,
+  "routes": [
+    {
+      "src": "/",
+      "dest": "/ecocompliance-landing.html"
+    },
+    {
+      "src": "/plataforma",
+      "dest": "/ecocompliance_platform.html"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/$1"
+    }
+  ]
+}
