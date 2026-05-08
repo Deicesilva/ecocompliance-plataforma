@@ -1,17 +1,19 @@
 {
   "version": 2,
+  "builds": [
+    {
+      "src": "*.html",
+      "use": "@vercel/static"
+    }
+  ],
   "routes": [
     {
       "src": "/",
-      "dest": "/ecocompliance-landing.html"
+      "dest": "/index.html"
     },
     {
       "src": "/plataforma",
       "dest": "/ecocompliance_platform.html"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/$1"
     }
   ]
 }
