@@ -12,8 +12,16 @@
       "dest": "/index.html"
     },
     {
+      "src": "/login",
+      "dest": "/login.html"
+    },
+    {
       "src": "/plataforma",
       "dest": "/ecocompliance_platform.html"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/$1"
     }
   ]
 }
