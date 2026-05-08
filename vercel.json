@@ -1,24 +1,5 @@
 {
   "version": 2,
-  "framework": null,
-  "builds": [
-    {
-      "src": "*.html",
-      "use": "@vercel/static"
-    }
-  ],
-  "routes": [
-    {
-      "src": "/",
-      "dest": "/index.html"
-    },
-    {
-      "src": "/plataforma",
-      "dest": "/ecocompliance_platform.html"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/$1.html"
-    }
-  ]
+  "buildCommand": null,
+  "outputDirectory": "."
 }
