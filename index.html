@@ -4,6 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>EcoCompliance — Conformidade Ambiental com IA</title>
+<meta name="description" content="Plataforma inteligente de conformidade ambiental com IA. Monitoramento legislativo, gestão de licenças, minutas de defesa e análise de risco.">
+<meta property="og:title" content="EcoCompliance — Conformidade Ambiental com IA">
+<meta property="og:description" content="Monitore normas, gerencie licenças e previna autuações com inteligência artificial.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌿</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;0,9..144,700;1,9..144,300&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
@@ -190,11 +195,26 @@ footer{padding:40px 5%;background:var(--ink);border-top:1px solid rgba(255,255,2
 .footer-links a:hover{color:rgba(255,255,255,.7);}
 .footer-copy{font-size:11px;color:rgba(255,255,255,.2);}
 
+.menu-toggle{display:none;background:none;border:none;cursor:pointer;padding:8px;color:var(--ink);}
+.mobile-menu{display:none;position:fixed;top:64px;left:0;right:0;background:rgba(245,242,235,.98);backdrop-filter:blur(12px);border-bottom:1px solid rgba(22,77,53,.1);padding:16px 5%;z-index:99;flex-direction:column;gap:12px;}
+.mobile-menu.open{display:flex;}
+.mobile-menu a{font-size:14px;color:var(--muted);text-decoration:none;padding:8px 0;}
+.mobile-menu a:hover{color:var(--ink);}
+.hero-dash-preview{cursor:pointer;transition:transform .2s,box-shadow .2s;}
+.hero-dash-preview:hover{transform:translateY(-4px);box-shadow:0 48px 120px rgba(7,19,13,.28);}
+.legal-modal{display:none;position:fixed;inset:0;background:rgba(7,19,13,.6);z-index:200;align-items:center;justify-content:center;padding:20px;}
+.legal-modal.open{display:flex;}
+.legal-box{background:#fff;border-radius:14px;padding:28px;max-width:560px;width:100%;max-height:80vh;overflow-y:auto;}
+.legal-box h3{font-family:'Fraunces',serif;font-size:20px;margin-bottom:12px;color:var(--ink);}
+.legal-box p{font-size:13px;color:var(--muted);line-height:1.7;margin-bottom:10px;}
+.legal-close{margin-top:16px;padding:10px 20px;background:var(--forest);color:#fff;border:none;border-radius:8px;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;}
 @media(max-width:768px){
   .pain-grid,.feat-grid,.plans,.testi-grid{grid-template-columns:1fr;}
   .how-steps{grid-template-columns:1fr 1fr;}
   .how-steps::before{display:none;}
-  .nav-links{display:none;}
+  .nav-links,.nav-cta .btn-main{display:none;}
+  .menu-toggle{display:block;margin-left:auto;}
+  .dash-inner,.dash-body{grid-template-columns:1fr 1fr;}
 }
 </style>
 </head>
@@ -202,7 +222,7 @@ footer{padding:40px 5%;background:var(--ink);border-top:1px solid rgba(255,255,2
 
 <!-- NAV -->
 <nav>
-  <a href="#" class="nav-brand">
+  <a href="index.html" class="nav-brand">
     <div class="nav-icon"><svg viewBox="0 0 24 24"><path d="M17 8C8 10 5.9 16.17 3.82 19.82A1 1 0 005 21c2-1 3.5-3 5-4 1.5-1 3-1.5 5-1.5s3.5.5 5 1.5c1.5 1 3 3 5 4a1 1 0 001.18-1.18C24.12 16.17 22 10 17 8z"/></svg></div>
     <span class="nav-name">EcoCompliance</span>
   </a>
@@ -213,10 +233,21 @@ footer{padding:40px 5%;background:var(--ink);border-top:1px solid rgba(255,255,2
     <a href="#contato">Contato</a>
   </div>
   <div class="nav-cta">
-    <a href="ecocompliance_platform.html" class="btn-ghost">Entrar</a>
-    <a href="#pricing" class="btn-main">Começar grátis →</a>
+    <a href="app.html" class="btn-ghost">Entrar</a>
+    <a href="app.html?trial=1" class="btn-main">Começar grátis →</a>
   </div>
+  <button class="menu-toggle" onclick="toggleMenu()" aria-label="Menu">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+  </button>
 </nav>
+<div class="mobile-menu" id="mobile-menu">
+  <a href="#features" onclick="toggleMenu()">Funcionalidades</a>
+  <a href="#pricing" onclick="toggleMenu()">Planos</a>
+  <a href="#faq" onclick="toggleMenu()">FAQ</a>
+  <a href="#contato" onclick="toggleMenu()">Contato</a>
+  <a href="app.html">Entrar</a>
+  <a href="app.html?trial=1" style="color:var(--forest);font-weight:500">Começar grátis →</a>
+</div>
 
 <!-- HERO -->
 <section class="hero">
@@ -225,13 +256,13 @@ footer{padding:40px 5%;background:var(--ink);border-top:1px solid rgba(255,255,2
   <h1>Conformidade ambiental<br>sem <em>susto</em>, sem multa</h1>
   <p>A plataforma inteligente que monitora normas, gerencia licenças, gera minutas de defesa e previne autuações — para escritórios de advocacia e empresas.</p>
   <div class="hero-actions">
-    <a href="#pricing" class="btn-hero prim">Testar grátis por 14 dias →</a>
+    <a href="app.html?trial=1" class="btn-hero prim">Testar grátis por 14 dias →</a>
     <a href="#features" class="btn-hero sec">Ver como funciona</a>
   </div>
   <div class="hero-social">Sem cartão de crédito · Cancele quando quiser · Dados 100% no Brasil</div>
 
   <!-- Dashboard preview -->
-  <div class="hero-dash-preview">
+  <a href="app.html?trial=1" class="hero-dash-preview" style="text-decoration:none;color:inherit;display:block">
     <div class="dash-topbar">
       <div class="dash-dot" style="background:#ff5f57"></div>
       <div class="dash-dot" style="background:#febc2e"></div>
@@ -261,7 +292,7 @@ footer{padding:40px 5%;background:var(--ink);border-top:1px solid rgba(255,255,2
         </div>
       </div>
     </div>
-  </div>
+  </a>
 </section>
 
 <!-- LOGOS -->
@@ -357,7 +388,7 @@ footer{padding:40px 5%;background:var(--ink);border-top:1px solid rgba(255,255,2
         <li class="no">Banco de jurisprudência</li>
         <li class="no">Múltiplos usuários</li>
       </ul>
-      <a href="#" class="plan-cta outline">Começar grátis</a>
+      <a href="app.html?trial=1" class="plan-cta outline">Começar grátis</a>
     </div>
 
     <!-- PROFISSIONAL -->
@@ -377,7 +408,7 @@ footer{padding:40px 5%;background:var(--ink);border-top:1px solid rgba(255,255,2
         <li>Banco de jurisprudência completo</li>
         <li>Até 3 usuários (advogados)</li>
       </ul>
-      <a href="#" class="plan-cta dark">Começar grátis por 14 dias</a>
+      <a href="app.html?trial=1" class="plan-cta dark">Começar grátis por 14 dias</a>
     </div>
 
     <!-- ENTERPRISE -->
@@ -462,7 +493,7 @@ footer{padding:40px 5%;background:var(--ink);border-top:1px solid rgba(255,255,2
   <h2>Pronto para sair do<br><em>apagão de compliance</em>?</h2>
   <p>Junte-se a centenas de escritórios e empresas que já transformaram sua gestão ambiental.</p>
   <div class="final-actions">
-    <a href="#pricing" class="btn-hero prim" style="background:var(--acc);color:var(--ink)">Começar grátis por 14 dias →</a>
+    <a href="app.html?trial=1" class="btn-hero prim" style="background:var(--acc);color:var(--ink)">Começar grátis por 14 dias →</a>
     <a href="https://wa.me/5511999999999" class="btn-hero sec" style="color:rgba(255,255,255,.7);border-color:rgba(255,255,255,.2)">💬 Falar no WhatsApp</a>
   </div>
   <p style="margin-top:16px;font-size:11px;color:rgba(255,255,255,.25);">Sem cartão de crédito · Setup em minutos · Suporte em português</p>
@@ -472,15 +503,36 @@ footer{padding:40px 5%;background:var(--ink);border-top:1px solid rgba(255,255,2
 <footer>
   <div class="footer-brand">🌿 EcoCompliance</div>
   <div class="footer-links">
-    <a href="#">Termos de Uso</a>
-    <a href="#">Privacidade</a>
-    <a href="#">LGPD</a>
-    <a href="#">Suporte</a>
+    <a href="#" onclick="openLegal('termos');return false">Termos de Uso</a>
+    <a href="#" onclick="openLegal('privacidade');return false">Privacidade</a>
+    <a href="#" onclick="openLegal('lgpd');return false">LGPD</a>
+    <a href="mailto:suporte@ecocompliance.com.br">Suporte</a>
   </div>
-  <div class="footer-copy">© 2025 EcoCompliance. Todos os direitos reservados.</div>
+  <div class="footer-copy">© 2026 EcoCompliance. Todos os direitos reservados.</div>
 </footer>
 
+<div class="legal-modal" id="legal-modal" onclick="if(event.target===this)closeLegal()">
+  <div class="legal-box">
+    <h3 id="legal-title"></h3>
+    <div id="legal-body"></div>
+    <button class="legal-close" onclick="closeLegal()">Fechar</button>
+  </div>
+</div>
+
 <script>
+const LEGAL={
+  termos:{title:'Termos de Uso',body:'<p>Ao utilizar a plataforma EcoCompliance, você concorda com estes termos. O serviço é destinado a profissionais e empresas que buscam gestão de conformidade ambiental.</p><p>As minutas geradas por IA são bases de trabalho e devem ser revisadas por advogado habilitado antes de qualquer uso oficial.</p><p>O trial de 14 dias oferece acesso completo sem cobrança. Após o período, a conta será suspensa até a escolha de um plano.</p>'},
+  privacidade:{title:'Política de Privacidade',body:'<p>Coletamos apenas dados necessários para operação da plataforma: e-mail, nome, CNPJ das empresas cadastradas e documentos ambientais enviados.</p><p>Não vendemos nem compartilhamos dados com terceiros. Criptografia TLS em trânsito e AES-256 em repouso.</p><p>Você pode solicitar exclusão dos seus dados a qualquer momento pelo e-mail privacidade@ecocompliance.com.br.</p>'},
+  lgpd:{title:'Conformidade LGPD',body:'<p>EcoCompliance opera em conformidade com a Lei nº 13.709/2018 (LGPD). Dados hospedados exclusivamente em servidores no Brasil.</p><p>Base legal: execução de contrato e legítimo interesse para monitoramento legislativo. DPO: dpo@ecocompliance.com.br.</p><p>Implementamos controles de acesso, logs de auditoria e autenticação de dois fatores para proteção dos dados.</p>'}
+};
+function openLegal(key){
+  const m=LEGAL[key];if(!m)return;
+  document.getElementById('legal-title').textContent=m.title;
+  document.getElementById('legal-body').innerHTML=m.body;
+  document.getElementById('legal-modal').classList.add('open');
+}
+function closeLegal(){document.getElementById('legal-modal').classList.remove('open');}
+function toggleMenu(){document.getElementById('mobile-menu').classList.toggle('open');}
 const prices={
   mensal:{bas:'R$ 297',pro:'R$ 697',per_bas:'/mês · cobrado mensalmente',per_pro:'/mês · cobrado mensalmente'},
   anual:{bas:'R$ 238',pro:'R$ 558',per_bas:'/mês · R$ 2.856/ano (-20%)',per_pro:'/mês · R$ 6.696/ano (-20%)'}
