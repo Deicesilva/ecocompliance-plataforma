@@ -145,6 +145,17 @@ tr:hover td{background:#fafafa;}
 .login-back{display:block;text-align:center;margin-top:16px;font-size:12px;color:#6b7280;text-decoration:none;}
 .login-back:hover{color:var(--g4);}
 .brand-logo{cursor:pointer;}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:300;display:flex;align-items:center;justify-content:center;padding:20px;}
+.modal-box{background:var(--card);border-radius:12px;width:100%;max-width:520px;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 20px 50px rgba(0,0,0,.2);}
+.modal-header{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid var(--border);}
+.modal-header h3{font-size:14px;font-weight:600;color:var(--tx1);margin:0;}
+.modal-close{background:none;border:none;font-size:20px;color:var(--tx3);cursor:pointer;line-height:1;}
+.modal-body{padding:18px;overflow-y:auto;font-size:12px;color:var(--tx2);line-height:1.65;}
+.modal-footer{padding:14px 18px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end;}
+.alert-item.read{opacity:.55;}
+.clickable{cursor:pointer;transition:.15s;}
+.clickable:hover{filter:brightness(.98);}
+.kpi.clickable:hover{border-color:var(--acc);cursor:pointer;}
 @media print{
   .sidebar,.header,.demo-banner,.btn{display:none!important;}
   .main,.app,.content{overflow:visible!important;height:auto!important;}
@@ -215,6 +226,8 @@ const MOCK={
 
 const AUTH_KEY='ecocompliance_auth';
 const ROLES={advogado:{name:'João Carvalho',role:'Advogado Sr.',avatar:'JC',badge:'advogado'},empresa:{name:'Ana Barbosa',role:'Gestora Ambiental',avatar:'AB',badge:'empresa'},admin:{name:'João Carvalho',role:'Administrador',avatar:'JC',badge:'admin'}};
+const NOTIF_TARGETS={1:'licencas',2:'legislativo',3:'infracoes',4:'jurisprudencia',5:'infracoes',6:'legislativo'};
+const RISCO_ACTIONS=['licencas','legislativo','legislativo',null];
 
 function showToast(msg){
   const el=document.createElement('div');
@@ -227,6 +240,41 @@ function showToast(msg){
 function getUrlParams(){
   const p=new URLSearchParams(window.location.search);
   return{trial:p.get('trial')==='1',view:p.get('view')};
+}
+
+function gerarIntegra(lei){
+  return `Art. 1º Esta norma estabelece diretrizes para ${lei.titulo.split('—')[1]||'conformidade ambiental'}.\n\nArt. 2º As empresas do setor industrial devem adequar seus processos no prazo de ${lei.prazo}.\n\nArt. 3º O descumprimento sujeita o infrator às penalidades previstas na Lei nº 9.605/98.\n\n[Texto demonstrativo para apresentação — consulte a íntegra oficial no órgão competente.]`;
+}
+
+function exportRelatorioCSV(){
+  const rows=[
+    ['Metrica','Valor','Periodo'],
+    ['Score Conformidade','87%','Jun/2025'],
+    ['Custo Evitado','R$ 284.000','2025'],
+    ['Multas Canceladas','R$ 48.000','2025'],
+    ['Licencas Renovadas','3','2025'],
+    ['Normas Atendidas','98%','Jun/2025'],
+  ];
+  const csv=rows.map(r=>r.join(';')).join('\n');
+  const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='ecocompliance-relatorio.csv';
+  a.click();
+  showToast('Relatório CSV exportado!');
+}
+
+function Modal({title,children,actions,onClose}){
+  return h('div',{className:'modal-overlay',onClick:e=>e.target===e.currentTarget&&onClose()},
+    h('div',{className:'modal-box'},
+      h('div',{className:'modal-header'},
+        h('h3',null,title),
+        h('button',{className:'modal-close',onClick:onClose},'×')
+      ),
+      h('div',{className:'modal-body'},children),
+      actions&&h('div',{className:'modal-footer'},actions)
+    )
+  );
 }
 
 function gerarMinutaDemo(form){
@@ -305,13 +353,15 @@ function NavIcon({view}){
   );
 }
 
-function Dashboard({setView}){
+function Dashboard({setView,licencas,notifs}){
+  const ativas=licencas.filter(l=>l.status!=='vencida').length;
+  const vencer=licencas.filter(l=>l.status==='vencer').length;
   return h('div',null,
     h('div',{className:'grid4',style:{marginBottom:12}},
-      h('div',{className:'kpi'},h('div',{className:'kpi-label'},'Score de Conformidade'),h('div',{className:'kpi-val',style:{color:'#10b981'}},'87%'),h('div',{className:'kpi-trend up'},'↑ +3pp este mês')),
-      h('div',{className:'kpi'},h('div',{className:'kpi-label'},'Licenças Ativas'),h('div',{className:'kpi-val'},'4'),h('div',{className:'kpi-trend warn'},'1 vence em 54 dias')),
-      h('div',{className:'kpi'},h('div',{className:'kpi-label'},'Infrações Abertas'),h('div',{className:'kpi-val',style:{color:'#ef4444'}},'2'),h('div',{className:'kpi-trend down'},'R$ 168.000 em risco')),
-      h('div',{className:'kpi'},h('div',{className:'kpi-label'},'Normas Monitoradas'),h('div',{className:'kpi-val'},'312'),h('div',{className:'kpi-trend info'},'5 novas este mês')),
+      h('div',{className:'kpi clickable',onClick:()=>setView('risco')},h('div',{className:'kpi-label'},'Score de Conformidade'),h('div',{className:'kpi-val',style:{color:'#10b981'}},'87%'),h('div',{className:'kpi-trend up'},'↑ +3pp este mês')),
+      h('div',{className:'kpi clickable',onClick:()=>setView('licencas')},h('div',{className:'kpi-label'},'Licenças Ativas'),h('div',{className:'kpi-val'},ativas),h('div',{className:'kpi-trend warn'},vencer?`1 vence em 54 dias`:'Todas em dia')),
+      h('div',{className:'kpi clickable',onClick:()=>setView('infracoes')},h('div',{className:'kpi-label'},'Infrações Abertas'),h('div',{className:'kpi-val',style:{color:'#ef4444'}},'2'),h('div',{className:'kpi-trend down'},'R$ 168.000 em risco')),
+      h('div',{className:'kpi clickable',onClick:()=>setView('legislativo')},h('div',{className:'kpi-label'},'Normas Monitoradas'),h('div',{className:'kpi-val'},'312'),h('div',{className:'kpi-trend info'},'5 novas este mês')),
     ),
     h('div',{className:'grid2',style:{marginBottom:12}},
       h('div',{className:'card'},
@@ -334,8 +384,8 @@ function Dashboard({setView}){
       ),
       h('div',{className:'card'},
         h('div',{className:'row-space',style:{marginBottom:10}},h('div',{className:'section-title',style:{margin:0}},'Alertas Críticos'),h('button',{className:'btn btn-outline btn-sm',onClick:()=>setView('notificacoes')},'Ver todos')),
-        MOCK.notifs.slice(0,4).map(n=>
-          h('div',{key:n.id,className:`alert-item ${n.tipo}`},
+        notifs.slice(0,4).map(n=>
+          h('div',{key:n.id,className:`alert-item clickable ${n.tipo} ${n.lida?'read':''}`,onClick:()=>setView(NOTIF_TARGETS[n.id]||'notificacoes')},
             h('div',{className:'alert-icon',style:{background:n.tipo==='crit'?'#fee2e2':n.tipo==='warn'?'#fef3c7':n.tipo==='ok'?'#d1fae5':'#dbeafe'}},
               n.tipo==='crit'?'🚨':n.tipo==='warn'?'⚠️':n.tipo==='ok'?'✅':'ℹ️'
             ),
@@ -349,8 +399,8 @@ function Dashboard({setView}){
         h('div',{className:'row-space',style:{marginBottom:10}},h('div',{className:'section-title',style:{margin:0}},'Licenças — Vencimentos'),h('button',{className:'btn btn-outline btn-sm',onClick:()=>setView('licencas')},'Gestão')),
         h('table',null,
           h('thead',null,h('tr',null,h('th',null,'Licença'),h('th',null,'Órgão'),h('th',null,'Validade'),h('th',null,'Status'))),
-          h('tbody',null,...MOCK.licencas.map(l=>
-            h('tr',{key:l.id},
+          h('tbody',null,...licencas.map(l=>
+            h('tr',{key:l.id,className:'clickable',onClick:()=>setView('licencas')},
               h('td',null,h('div',{style:{fontSize:11,fontWeight:500}},l.tipo),h('div',{style:{fontSize:10,color:'#9ca3af'}},l.numero)),
               h('td',null,l.orgao),
               h('td',null,h('span',{style:{fontFamily:'var(--mono)',fontSize:11}},l.validade)),
@@ -375,10 +425,22 @@ function Dashboard({setView}){
   );
 }
 
-function Legislativo(){
+function Legislativo({setModal}){
   const [filtro,setFiltro]=useState('todos');
   const [busca,setBusca]=useState('');
   const itens=MOCK.leis.filter(l=>(filtro==='todos'||l.nivel===filtro)&&(l.titulo.toLowerCase().includes(busca.toLowerCase())));
+  const verIntegra=(l)=>setModal({
+    title:l.titulo,
+    body:h('div',null,
+      h('div',{className:'row',style:{gap:6,marginBottom:10}},
+        h('span',{className:`tag ${l.nivel==='federal'?'fed':l.nivel==='estadual'?'est':'mun'}`},l.nivel),
+        h('span',{style:{fontSize:10,color:'#9ca3af'}},'Publicada em ',l.data,' · Prazo: ',l.prazo)
+      ),
+      h('p',{style:{marginBottom:10}},l.resumo),
+      h('pre',{style:{whiteSpace:'pre-wrap',fontFamily:'var(--mono)',fontSize:11,background:'#f8faf9',padding:12,borderRadius:8,border:'1px solid #d1e7d9'}},gerarIntegra(l))
+    ),
+    actions:h('button',{className:'btn btn-primary btn-sm',onClick:()=>{setModal(null);showToast('Norma adicionada ao monitoramento');}},'Monitorar norma')
+  });
   return h('div',null,
     h('div',{className:'row',style:{marginBottom:12}},
       h('input',{className:'input',style:{maxWidth:280},placeholder:'Buscar norma...',value:busca,onChange:e=>setBusca(e.target.value)}),
@@ -399,14 +461,14 @@ function Legislativo(){
         h('div',{style:{fontSize:11,color:'#4b5563',marginBottom:8}},l.resumo),
         h('div',{className:'row-space'},
           h('span',{style:{fontSize:10,color:'#6b7280'}},'⏱ Prazo: ',h('strong',null,l.prazo)),
-          h('button',{className:'btn btn-outline btn-sm'},'Ver íntegra →')
+          h('button',{className:'btn btn-outline btn-sm',onClick:()=>verIntegra(l)},'Ver íntegra →')
         )
       ))
     )
   );
 }
 
-function Risco(){
+function Risco({setView}){
   return h('div',null,
     h('div',{className:'grid3',style:{marginBottom:12}},
       h('div',{className:'kpi'},h('div',{className:'kpi-label'},'Risco Geral'),h('div',{className:'kpi-val',style:{color:'#f59e0b'}},'Médio'),h('div',{className:'kpi-trend warn'},'Score: 61/100')),
@@ -443,7 +505,8 @@ function Risco(){
           h('div',{style:{flex:1}},
             h('div',{style:{fontSize:12,fontWeight:600,color:'#0f1a14'}},r.titulo),
             h('div',{style:{fontSize:11,color:'#4b5563',marginTop:2}},r.desc),
-            h('div',{style:{fontSize:10,color:'#9ca3af',marginTop:4}},'Prazo: ',h('strong',{style:{color:r.urgencia==='Urgente'?'#ef4444':r.urgencia==='Rotina'?'#10b981':'#f59e0b'}},r.urgencia))
+            h('div',{style:{fontSize:10,color:'#9ca3af',marginTop:4}},'Prazo: ',h('strong',{style:{color:r.urgencia==='Urgente'?'#ef4444':r.urgencia==='Rotina'?'#10b981':'#f59e0b'}},r.urgencia)),
+            RISCO_ACTIONS[i]&&h('button',{className:'btn btn-outline btn-sm',style:{marginTop:8},onClick:()=>setView(RISCO_ACTIONS[i])},'Agir agora →')
           )
         ))
       )
@@ -451,18 +514,38 @@ function Risco(){
   );
 }
 
-function Licencas(){
+function Licencas({licencas,setLicencas,setModal}){
+  const novaLicenca=()=>setModal({
+    title:'Cadastrar Nova Licença',
+    body:h(NovaLicencaForm,{onSave:(data)=>{setLicencas(ls=>[...ls,data]);setModal(null);showToast('Licença cadastrada com sucesso!');}}),
+    actions:null
+  });
+  const renovarEmergencial=()=>setModal({
+    title:'Renovação Emergencial — AS-2019-0056',
+    body:h('div',null,
+      h('p',null,'Solicitar renovação urgente da Autorização de Supressão vencida há 7 dias junto à SMA.'),
+      h('p',{style:{marginTop:8,color:'#ef4444'}},'Risco de autuação iminente se não regularizado em 48h.')
+    ),
+    actions:h('div',{style:{display:'flex',gap:8}},
+      h('button',{className:'btn btn-outline btn-sm',onClick:()=>setModal(null)},'Cancelar'),
+      h('button',{className:'btn btn-primary btn-sm',onClick:()=>{
+        setLicencas(ls=>ls.map(l=>l.numero==='AS-2019-0056'?{...l,status:'vencer',diasRestantes:90,validade:'29/09/2026',progresso:10}:l));
+        setModal(null);
+        showToast('Protocolo de renovação emergencial enviado à SMA!');
+      }},'Confirmar solicitação')
+    )
+  });
   return h('div',null,
     h('div',{className:'card'},
       h('div',{className:'row-space',style:{marginBottom:12}},
         h('div',{className:'section-title',style:{margin:0}},'Gestão de Licenças Ambientais'),
-        h('button',{className:'btn btn-primary btn-sm'},'+ Nova Licença')
+        h('button',{className:'btn btn-primary btn-sm',onClick:novaLicenca},'+ Nova Licença')
       ),
       h('table',null,
         h('thead',null,h('tr',null,
           h('th',null,'Tipo'),h('th',null,'Número'),h('th',null,'Órgão'),h('th',null,'Validade'),h('th',null,'Dias Restantes'),h('th',null,'Progresso'),h('th',null,'Status')
         )),
-        h('tbody',null,...MOCK.licencas.map(l=>{
+        h('tbody',null,...licencas.map(l=>{
           const color=l.status==='vencida'?'#ef4444':l.status==='vencer'?'#f59e0b':'#10b981';
           return h('tr',{key:l.id},
             h('td',null,h('div',{style:{fontWeight:500,fontSize:12}},l.tipo)),
@@ -491,16 +574,38 @@ function Licencas(){
             h('div',{className:'sub'},'Autorização de Supressão vencida há 7 dias. Regularização urgente. Risco de autuação.')
           )
         ),
-        h('button',{className:'btn btn-primary',style:{marginTop:8}},'Solicitar renovação emergencial')
+        h('button',{className:'btn btn-primary',style:{marginTop:8},onClick:renovarEmergencial},'Solicitar renovação emergencial')
       )
     )
   );
 }
 
-function Minutas(){
-  const [form,setForm]=useState({tipo:'defesa_adm',orgao:'CETESB',processo:'',empresa:'',infração:'',fatos:'',tese:''});
+function NovaLicencaForm({onSave}){
+  const [f,setF]=useState({tipo:'Licença de Operação',numero:'',orgao:'CETESB',validade:''});
+  const upd=(k,v)=>setF(x=>({...x,[k]:v}));
+  return h('div',null,
+    h('div',{className:'form-group'},h('label',{className:'form-label'},'Tipo'),h('select',{className:'select',value:f.tipo,onChange:e=>upd('tipo',e.target.value)},['Licença de Operação','Licença de Instalação','Licença Prévia','Outorga de Água','Autorização de Supressão'].map(t=>h('option',{key:t,value:t},t)))),
+    h('div',{className:'form-group'},h('label',{className:'form-label'},'Número'),h('input',{className:'input',value:f.numero,onChange:e=>upd('numero',e.target.value),placeholder:'LO-2026-0001'})),
+    h('div',{className:'form-group'},h('label',{className:'form-label'},'Órgão'),h('select',{className:'select',value:f.orgao,onChange:e=>upd('orgao',e.target.value)},['CETESB','IBAMA','DAEE','SMA','INEA'].map(o=>h('option',{key:o,value:o},o)))),
+    h('div',{className:'form-group'},h('label',{className:'form-label'},'Validade'),h('input',{className:'input',value:f.validade,onChange:e=>upd('validade',e.target.value),placeholder:'31/12/2026'})),
+    h('button',{className:'btn btn-primary',style:{width:'100%'},onClick:()=>{
+      if(!f.numero||!f.validade){showToast('Preencha número e validade.');return;}
+      onSave({id:Date.now(),...f,status:'vigente',diasRestantes:365,progresso:5});
+    }},'Salvar licença')
+  );
+}
+
+function Minutas({minutaPrefill,setMinutaPrefill}){
+  const [form,setForm]=useState({tipo:'defesa_adm',orgao:'CETESB',processo:'',empresa:'Metalúrgica Brasil Ltda',infração:'',fatos:'',tese:''});
   const [output,setOutput]=useState('');
   const [loading,setLoading]=useState(false);
+  useEffect(()=>{
+    if(minutaPrefill){
+      setForm(f=>({...f,...minutaPrefill}));
+      setMinutaPrefill(null);
+      showToast('Dados vinculados ao formulário de minuta.');
+    }
+  },[minutaPrefill]);
 
   const gerar=useCallback(()=>{
     if(!form.fatos.trim()){showToast('Descreva os fatos relevantes.');return;}
@@ -540,7 +645,7 @@ function Minutas(){
   );
 }
 
-function Jurisprudencia(){
+function Jurisprudencia({setView,setMinutaPrefill}){
   const [busca,setBusca]=useState('');
   const [expId,setExpId]=useState(null);
   const itens=MOCK.juri.filter(j=>j.assunto.toLowerCase().includes(busca.toLowerCase())||j.numero.includes(busca));
@@ -568,7 +673,11 @@ function Jurisprudencia(){
           isExp&&h('div',{style:{marginTop:10,padding:10,background:'#f9fafb',borderRadius:6,fontSize:11,color:'#374151',lineHeight:1.6}},
             h('div',{style:{fontWeight:600,marginBottom:4}},'Ementa resumida:'),
             j.ementa,
-            h('div',{style:{marginTop:8}},h('span',{className:`badge ${j.resultado.includes('Favorável')||j.resultado.includes('Procedente')?'green':j.resultado.includes('Parcial')?'amber':'red'}`},j.resultado))
+            h('div',{style:{marginTop:8}},h('span',{className:`badge ${j.resultado.includes('Favorável')||j.resultado.includes('Procedente')?'green':j.resultado.includes('Parcial')?'amber':'red'}`},j.resultado)),
+            h('div',{style:{marginTop:10,display:'flex',gap:8}},
+              h('button',{className:'btn btn-primary btn-sm',onClick:e=>{e.stopPropagation();setMinutaPrefill({tese:j.ementa,fatos:`Fundamentar com precedente ${j.numero} (${j.tribunal}) — ${j.assunto}`});setView('minutas');}},'Usar na minuta →'),
+              h('button',{className:'btn btn-outline btn-sm',onClick:e=>{e.stopPropagation();navigator.clipboard.writeText(j.ementa).then(()=>showToast('Ementa copiada!'));}},'Copiar ementa')
+            )
           )
         );
       })
@@ -576,11 +685,12 @@ function Jurisprudencia(){
   );
 }
 
-function Infracoes(){
+function Infracoes({setView,setMinutaPrefill}){
   const [tab,setTab]=useState('lista');
   const [analyzing,setAnalyzing]=useState(false);
   const [analyzed,setAnalyzed]=useState(false);
   const fileRef=useRef(null);
+  const irMinuta=(data)=>{setMinutaPrefill(data);setView('minutas');};
   const handleUpload=()=>{
     setAnalyzing(true);setAnalyzed(false);
     setTimeout(()=>{setAnalyzing(false);setAnalyzed(true);showToast('Análise concluída — vício formal identificado (72% prob.)');},2200);
@@ -603,6 +713,10 @@ function Infracoes(){
               h('span',{style:{fontSize:11,color:'#6b7280'}},'Prob. defesa:'),
               h('span',{style:{fontWeight:700,fontSize:12,fontFamily:'var(--mono)',color:i.prob>=70?'#10b981':i.prob>=50?'#f59e0b':'#ef4444'}},i.prob+'%')
             )
+          ),
+          h('div',{className:'row',style:{gap:8,marginTop:10}},
+            h('button',{className:'btn btn-primary btn-sm',onClick:()=>irMinuta({processo:i.num,orgao:i.orgao,infração:i.tipo,fatos:`Auto ${i.num} lavrado por ${i.orgao} em ${i.data}. Multa de ${i.valor}.`,tese:'Vício formal e desproporcionalidade da penalidade'})},'Gerar defesa →'),
+            h('button',{className:'btn btn-outline btn-sm',onClick:()=>setView('jurisprudencia')},'Ver jurisprudência')
           )
         ))
       )
@@ -621,7 +735,7 @@ function Infracoes(){
           h('div',{className:'alert-text'},
             h('div',{className:'title'},'Resultado da análise — Prob. defesa: 72%'),
             h('div',{className:'sub'},'Vício formal: auto não especifica dispositivo legal violado (TRF-3, AC 0012345-67). Estratégia recomendada: defesa administrativa com pedido de anulação.'),
-            h('button',{className:'btn btn-primary btn-sm',style:{marginTop:8},onClick:()=>showToast('Minuta vinculada ao Gerador de Minutas')},'Gerar defesa →')
+            h('button',{className:'btn btn-primary btn-sm',style:{marginTop:8},onClick:()=>irMinuta({processo:'AI-2025-0891',orgao:'CETESB',infração:'Infração ambiental',fatos:'Auto de infração AI-2025-0891 com vício formal: dispositivo legal não especificado.',tese:'Nulidade por ausência de fundamentação (TRF-3, AC 0012345-67)'})},'Gerar defesa →')
           )
         ),
         !analyzed&&h('div',{className:'alert-item info',style:{marginTop:12}},
@@ -639,8 +753,15 @@ function Infracoes(){
 function Relatorios(){
   const meses=['Jan','Fev','Mar','Abr','Mai','Jun'];
   const scores=[78,80,82,84,85,87];
-  const maxH=100,chartH=130,barW=40;
+  const maxH=100,chartH=130;
   return h('div',null,
+    h('div',{className:'row-space',style:{marginBottom:12}},
+      h('div',{className:'section-title',style:{margin:0}},'Relatórios & Analytics'),
+      h('div',{className:'row',style:{gap:8}},
+        h('button',{className:'btn btn-outline btn-sm',onClick:exportRelatorioCSV},'📊 Exportar CSV'),
+        h('button',{className:'btn btn-primary btn-sm',onClick:()=>window.print()},'📄 Exportar PDF')
+      )
+    ),
     h('div',{className:'grid4',style:{marginBottom:12}},
       h('div',{className:'kpi'},h('div',{className:'kpi-label'},'Custo Evitado (2025)'),h('div',{className:'kpi-val',style:{fontSize:18}},'R$ 284k'),h('div',{className:'kpi-trend up'},'↑ 34% vs 2024')),
       h('div',{className:'kpi'},h('div',{className:'kpi-label'},'Multas Canceladas'),h('div',{className:'kpi-val'},'R$ 48k'),h('div',{className:'kpi-trend up'},'2 defesas aceitas')),
@@ -683,14 +804,16 @@ function Relatorios(){
   );
 }
 
-function Notificacoes(){
+function Notificacoes({notifs,setNotifs,setView}){
+  const marcarTodas=()=>{setNotifs(ns=>ns.map(n=>({...n,lida:true})));showToast('Todas as notificações marcadas como lidas.');};
+  const abrir=(n)=>{setNotifs(ns=>ns.map(x=>x.id===n.id?{...x,lida:true}:x));setView(NOTIF_TARGETS[n.id]||'dashboard');};
   return h('div',null,
     h('div',{className:'row-space',style:{marginBottom:12}},
       h('div',{className:'section-title',style:{margin:0}},'Central de Notificações'),
-      h('button',{className:'btn btn-outline btn-sm'},'Marcar todas como lidas')
+      h('button',{className:'btn btn-outline btn-sm',onClick:marcarTodas},'Marcar todas como lidas')
     ),
     h('div',{style:{display:'grid',gap:8}},
-      MOCK.notifs.map(n=>h('div',{key:n.id,className:`alert-item ${n.tipo}`,style:{cursor:'pointer'}},
+      notifs.map(n=>h('div',{key:n.id,className:`alert-item ${n.tipo} ${n.lida?'read':''}`,style:{cursor:'pointer'},onClick:()=>abrir(n)},
         h('div',{className:'alert-icon',style:{background:n.tipo==='crit'?'#fee2e2':n.tipo==='warn'?'#fef3c7':n.tipo==='ok'?'#d1fae5':'#dbeafe',fontSize:18}},
           n.tipo==='crit'?'🚨':n.tipo==='warn'?'⚠️':n.tipo==='ok'?'✅':'ℹ️'
         ),
@@ -699,7 +822,7 @@ function Notificacoes(){
           h('div',{className:'sub'},n.sub),
           h('div',{className:'time'},n.tempo)
         ),
-        h('button',{className:'btn btn-outline btn-sm',style:{flexShrink:0}},'Ver')
+        h('button',{className:'btn btn-outline btn-sm',style:{flexShrink:0},onClick:e=>{e.stopPropagation();abrir(n);}},'Ver')
       ))
     )
   );
@@ -728,8 +851,14 @@ function AppShell({onLogout,user,trial}){
   const params=getUrlParams();
   const [view,setView]=useState(params.view&&VIEWS[params.view]?params.view:'dashboard');
   const [menuOpen,setMenuOpen]=useState(false);
+  const [licencas,setLicencas]=useState([...MOCK.licencas]);
+  const [notifs,setNotifs]=useState(MOCK.notifs.map(n=>({...n,lida:false})));
+  const [modal,setModal]=useState(null);
+  const [minutaPrefill,setMinutaPrefill]=useState(null);
   const V=VIEWS[view];
   const goView=(k)=>{setView(k);setMenuOpen(false);};
+  const unread=notifs.filter(n=>!n.lida).length;
+  const appProps={setView:goView,licencas,setLicencas,notifs,setNotifs,setModal,minutaPrefill,setMinutaPrefill};
   const u=ROLES[user?.role]||ROLES.advogado;
   return h('div',{className:'app'},
     h('div',{className:`sidebar-overlay ${menuOpen?'open':''}`,onClick:()=>setMenuOpen(false)}),
@@ -752,7 +881,7 @@ function AppShell({onLogout,user,trial}){
         ...g.items.map(k=>h('div',{key:k,className:`nav-item ${view===k?'active':''}`,onClick:()=>goView(k)},
           h(NavIcon,{view:k}),
           VIEWS[k].label.split(' ')[0]+' '+(VIEWS[k].label.split(' ').slice(1,2).join(' ')||''),
-          k==='notificacoes'&&h('span',{className:'nav-badge'},'3'),
+          k==='notificacoes'&&unread>0&&h('span',{className:'nav-badge'},unread),
           k==='infracoes'&&h('span',{className:'nav-badge warn'},'2'),
         ))
       ]),
@@ -773,11 +902,14 @@ function AppShell({onLogout,user,trial}){
         h('div',{className:'row',style:{gap:8}},
           h('div',{className:'notif-btn',onClick:()=>goView('notificacoes')},
             h('svg',{width:15,height:15,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:1.8},h('path',{d:'M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9'})),
-            h('div',{className:'notif-dot'})
+            unread>0&&h('div',{className:'notif-dot'})
           )
         )
       ),
-      h('div',{className:'content'},h(V.comp,{setView:goView}))
+      h('div',{className:'content'},
+        h(V.comp,appProps),
+        modal&&h(Modal,{title:modal.title,actions:modal.actions,onClose:()=>setModal(null)},modal.body)
+      )
     )
   );
 }
