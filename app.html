@@ -239,7 +239,7 @@ function showToast(msg){
 
 function getUrlParams(){
   const p=new URLSearchParams(window.location.search);
-  return{trial:p.get('trial')==='1',view:p.get('view')};
+  return{trial:p.get('trial')==='1',view:p.get('view'),login:p.get('login')==='1'};
 }
 
 function gerarIntegra(lei){
@@ -958,20 +958,20 @@ function App(){
     const u={role:data.role,email:data.email,trial:!!data.trial,ts:Date.now()};
     localStorage.setItem(AUTH_KEY,JSON.stringify(u));
     setUser(u);
-    if(data.trial)window.history.replaceState({},'','app.html');
+    window.history.replaceState({},'','app.html');
+    if(data.trial)showToast('Trial de 14 dias ativado! Bem-vindo à EcoCompliance.');
+    else showToast('Login realizado com sucesso!');
   };
   const logout=()=>{
     localStorage.removeItem(AUTH_KEY);
-    setUser(null);
-    window.location.href='index.html';
+    window.location.href='app.html?login=1';
   };
   useEffect(()=>{
-    if(params.trial&&!user){
-      const u={role:'advogado',email:'demo@ecocompliance.com.br',trial:true,ts:Date.now()};
-      localStorage.setItem(AUTH_KEY,JSON.stringify(u));
-      setUser(u);
-      window.history.replaceState({},'','app.html');
-      showToast('Trial de 14 dias ativado! Bem-vindo à EcoCompliance.');
+    if(params.login){
+      localStorage.removeItem(AUTH_KEY);
+      setUser(null);
+      const qs=params.trial?'?trial=1':'';
+      window.history.replaceState({},'',`app.html${qs}`);
     }
   },[]);
   return user
