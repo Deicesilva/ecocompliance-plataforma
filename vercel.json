@@ -2,6 +2,15 @@
   "buildCommand": "",
   "installCommand": "",
   "outputDirectory": ".",
+  "headers": [
+    {
+      "source": "/(.*).html",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" },
+        { "key": "Pragma", "value": "no-cache" }
+      ]
+    }
+  ],
   "rewrites": [
     { "source": "/ecocompliance-landing.html", "destination": "/index.html" },
     { "source": "/ecocompliance_platform.html", "destination": "/app.html" }
